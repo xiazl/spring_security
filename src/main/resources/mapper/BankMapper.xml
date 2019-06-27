@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cims.business.card.mapper.BankMapper">
+
+    <select id="listBank" resultType="com.cims.business.card.entity.Bank">
+        select id, bank_name from bank where is_delete = 0
+    </select>
+
+
+    <select id="listByNames" resultType="com.cims.business.card.entity.Bank">
+        select id, bank_name from bank where is_delete = 0 and bank_name in
+        <foreach collection="bankNameList" item="bankName" open="(" close=")" separator=",">
+            #{bankName}
+        </foreach>
+    </select>
+
+    <select id="selectByBankName" parameterType="java.lang.String" resultType="com.cims.business.card.entity.Bank">
+        select id, bank_name from bank where bank_name = #{bankName}
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.cims.business.card.entity.Bank">
+        select id, bank_name from bank where id = #{id}
+    </select>
+
+    <select id="list" resultType="com.cims.business.card.entity.Bank">
+        select id, bank_name, create_time from bank
+        <where>
+            is_delete = 0
+            <if test="bankName != null and bankName != ''">
+                and bank_name like concat('%',#{bankName},'%')
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.cims.business.card.entity.Bank">
+        insert into bank(bank_name, create_user_id)
+        values(#{bankName}, #{createUserId})
+        on duplicate key update
+        create_user_id = #{createUserId},
+        is_delete = 0
+    </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.cims.business.card.entity.Bank">
+        update bank
+        <set>
+            <if test="bankName != null and bankName != ''">
+                bank_name = #{bankName}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="deleteByPrimaryKeys" parameterType="java.lang.Long">
+        update bank set is_delete = 1
+        where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

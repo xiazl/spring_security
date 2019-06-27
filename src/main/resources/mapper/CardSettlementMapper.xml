@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.settlement.mapper.CardSettlementMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.settlement.entity.CardSettlement">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="card_no" jdbcType="VARCHAR" property="cardNo"/>
+        <result column="start_date" jdbcType="DATE" property="startDate"/>
+        <result column="stop_date" jdbcType="DATE" property="stopDate"/>
+        <result column="days" jdbcType="INTEGER" property="days"/>
+        <result column="type" jdbcType="INTEGER" property="type"/>
+        <result column="amount" jdbcType="DECIMAL" property="amount"/>
+        <result column="deduct_amount" jdbcType="DECIMAL" property="deductAmount"/>
+        <result column="real_amount" jdbcType="DECIMAL" property="realAmount"/>
+        <result column="payment_date" jdbcType="DATE" property="paymentDate"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, card_no, start_date, stop_date, days, type, amount, deduct_amount, real_amount,
+    payment_date, create_user_id, create_time
+  </sql>
+
+    <select id="listPurchaseCard" resultType="com.cims.business.settlement.vo.CardInfoListVO">
+        select ca.id, ca.card_no, ca.bank_name, ca.owner,ca.status,cp.ckr,cp.price purchase_price,
+        cp.purchase_date,cs.stop_date last_date, cc.channel_name
+        from card ca left join card_purchase cp on ca.card_no = cp.card_no
+        left join card_channel cc on cc.id = cp.channel
+        left join card_settlement cs on ca.card_no = cs.card_no and cs.type = 1 and is_last = 1
+        where ca.is_delete = 0 and ca.archive = 0
+        and ca.archive = 0
+        <if test="cardNo != null and cardNo.length() > 0">
+            and ca.card_no like concat('%',#{cardNo},'%')
+        </if>
+        <if test="bankName != null and bankName.length() > 0">
+            and ca.bank_name like concat('%',#{bankName},'%')
+        </if>
+        <if test="owner != null and owner.length() > 0">
+            and ca.owner like concat('%',#{owner},'%')
+        </if>
+        <if test="channel != null">
+            and cc.id =#{channel}
+        </if>
+    </select>
+
+    <select id="listSaleCard" resultType="com.cims.business.settlement.vo.CardInfoListVO">
+        select ca.id, ca.card_no, ca.bank_name, ca.owner,ca.status,ct.project_name,sale.price sale_price,
+        sale.sale_date,sale.receiver,cs.stop_date last_date
+        from card ca
+        left join card_sale sale on ca.card_no = sale.card_no
+        left join card_project ct on ct.id = sale.project_id
+        left join card_settlement cs on ca.card_no = cs.card_no and cs.type = 2 and is_last = 1
+        where ca.is_delete = 0 and ca.archive = 0
+        and ca.archive = 0
+        <if test="cardNo != null and cardNo.length() > 0">
+            and ca.card_no like concat('%',#{cardNo},'%')
+        </if>
+        <if test="bankName != null and bankName.length() > 0">
+            and ca.bank_name like concat('%',#{bankName},'%')
+        </if>
+        <if test="owner != null and owner.length() > 0">
+            and ca.owner like concat('%',#{owner},'%')
+        </if>
+        <if test="projectId != null">
+            and ct.id =#{projectId}
+        </if>
+    </select>
+
+
+    <select id="listSettlement" resultType="com.cims.business.settlement.vo.CardSettlementListVO">
+        select cs.id, cs.card_no, cs.status, ca.main_type, ca.bank_name, ca.owner, cs.start_date, cs.stop_date, cs.days, cs.price,cs.type,cs.is_last,
+        cs.amount, cs.deduct_amount, cs.real_amount, cs.payment_date, cs.create_time, cm.date,
+        cm.disable_type,cm.freeze_type, cm.reason, cm.freeze_amount, cm.process_status, process_method
+        from card_settlement cs left join card ca on ca.card_no = cs.card_no
+        left join card_maintain cm on ca.card_no = cm.card_no and cm.is_delete = 0
+        <where>
+            cs.is_delete = 0
+
+            <if test="cardNo != null and cardNo.length() > 0">
+                and ca.card_no like concat('%',#{cardNo},'%')
+            </if>
+            <if test="type != null">
+                and cs.type = #{type}
+            </if>
+            <if test="bankName != null and bankName.length() > 0">
+                and ca.bank_name like concat('%',#{bankName},'%')
+            </if>
+            <if test="owner != null and owner.length() > 0">
+                and ca.owner like concat('%',#{owner},'%')
+            </if>
+            <if test="startDate != null">
+                and cs.start_date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cs.stop_date &lt;= #{stopDate}
+            </if>
+        </where>
+    </select>
+
+    <update id="updateIsLast">
+        update card_settlement set is_last = 0 where card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and `type` = #{type}
+    </update>
+
+    <insert id="insertBatchInSettlement">
+        insert into card_settlement(card_no, status, start_date, stop_date,
+        days, `type`,price, amount, deduct_amount,
+        real_amount, create_user_id, is_last
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, #{item.status,jdbcType=INTEGER}, #{item.startDate,jdbcType=TIMESTAMP},
+            #{item.stopDate,jdbcType=TIMESTAMP}, #{item.days,jdbcType=INTEGER}, 1, #{item.price,jdbcType=DECIMAL},
+            #{item.amount,jdbcType=DECIMAL}, #{item.deductAmount,jdbcType=DECIMAL}, #{item.realAmount,jdbcType=DECIMAL},
+            #{createUserId,jdbcType=BIGINT}, 1
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        start_date = values(start_date),
+        stop_date = values(stop_date),
+        days = values(days),
+        price = values(price),
+        amount = values(amount),
+        deduct_amount = values(deduct_amount),
+        real_amount = values(real_amount)
+    </insert>
+
+    <insert id="insertBatchOutSettlement">
+        insert into card_settlement(card_no, status, start_date, stop_date,
+        days, `type`, price, amount, create_user_id, is_last
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, #{item.status,jdbcType=INTEGER}, #{item.startDate,jdbcType=TIMESTAMP},
+            #{item.stopDate,jdbcType=TIMESTAMP}, #{item.days,jdbcType=INTEGER}, 2, #{item.price,jdbcType=DECIMAL},
+            #{item.amount,jdbcType=DECIMAL}, #{createUserId,jdbcType=BIGINT}, 1
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        start_date = values(start_date),
+        stop_date = values(stop_date),
+        days = values(days),
+        price = values(price),
+        real_amount = values(real_amount)
+    </insert>
+
+    <select id="listByCardNos" resultType="com.cims.business.settlement.entity.CardSettlement">
+        select id, card_no, start_date, stop_date, days, `type` from card_settlement
+        where card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and `type` = #{type}
+        and is_last = 1
+    </select>
+
+    <select id="listByIds" resultType="com.cims.business.settlement.entity.CardSettlement">
+        select id, card_no, start_date, stop_date, `type` from card_settlement
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        <if test="isLast == true">
+            and is_last = 1
+        </if>
+
+    </select>
+
+    <delete id="deleteByPrimaryKeys" parameterType="java.lang.Long">
+        update card_settlement set is_delete = 1
+        where id in
+        <foreach collection="list" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+
+    <update id="updateInByPrimaryKeys">
+        update card_settlement set stop_date =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.stopDate}
+        </foreach>
+        end,
+        days =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.days}
+        </foreach>
+        end,
+        price =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.price}
+        </foreach>
+        end,
+        status =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.status}
+        </foreach>
+        end,
+        amount =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.amount}
+        </foreach>
+        end,
+        deduct_amount =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.deductAmount}
+        </foreach>
+        end,
+        real_amount =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.realAmount}
+        </foreach>
+        end
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        and is_delete = 0
+  </update>
+
+    <update id="updateOutByPrimaryKeys">
+        update card_settlement set stop_date =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.stopDate}
+        </foreach>
+        end,
+        days =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.days}
+        </foreach>
+        end,
+        price =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.price}
+        </foreach>
+        end,
+        status =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.status}
+        </foreach>
+        end,
+        amount =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.amount}
+        </foreach>
+        end
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <update id="updatePayDateByPrimaryKeys">
+        update card_settlement set payment_date =
+        case id
+        <foreach collection="list" item="item">
+            when #{item.id} then #{item.paymentDate}
+        </foreach>
+        end
+        where id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <select id="listCardNos" resultType="java.lang.String">
+        select cs.card_no from card_settlement cs left join card_maintain cm on cs.card_no = cm.card_no and cs.stop_date &gt;= cm.date
+        where cs.card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and cs.`type` = #{type}
+        and cs.is_last = 1
+
+    </select>
+</mapper>

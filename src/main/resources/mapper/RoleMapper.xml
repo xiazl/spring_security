@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.cims.business.user.mapper.RoleMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.user.entity.Role">
+        <id column="id" property="id"/>
+        <result column="role_name" property="roleName"/>
+        <result column="role_code" property="roleCode"/>
+        <result column="role_des" property="roleDes"/>
+    </resultMap>
+
+    <select id="getRoleByUserId" resultType="java.lang.String">
+        select r.role_code from `user` us left join user_role ur on us.id = ur.user_id
+        left join role r on ur.role_id = r.id
+        where us.id = #{userId} and us.is_delete = 0
+    </select>
+</mapper>

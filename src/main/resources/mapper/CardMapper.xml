@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.CardMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.Card">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="main_type" jdbcType="INTEGER" property="mainType"/>
+        <result column="bank_name" jdbcType="VARCHAR" property="bankName"/>
+        <result column="owner" jdbcType="VARCHAR" property="owner"/>
+        <result column="card_no" jdbcType="VARCHAR" property="cardNo"/>
+        <result column="province" jdbcType="VARCHAR" property="province"/>
+        <result column="city" jdbcType="VARCHAR" property="city"/>
+        <result column="branch_name" jdbcType="VARCHAR" property="branchName"/>
+        <result column="id_no" jdbcType="VARCHAR" property="idNo"/>
+        <result column="login_password" jdbcType="VARCHAR" property="loginPassword"/>
+        <result column="pay_password" jdbcType="VARCHAR" property="payPassword"/>
+        <result column="ukey_password" jdbcType="VARCHAR" property="ukeyPassword"/>
+        <result column="type_user_name" jdbcType="VARCHAR" property="typeUserName"/>
+        <result column="type_login_password" jdbcType="VARCHAR" property="typeLoginPassword"/>
+        <result column="type_pay_password" jdbcType="VARCHAR" property="typePayPassword"/>
+        <result column="secondary_type" jdbcType="INTEGER" property="secondaryType"/>
+        <result column="status" jdbcType="INTEGER" property="status"/>
+        <result column="phone_no" jdbcType="VARCHAR" property="phoneNo"/>
+        <result column="phone_password" jdbcType="VARCHAR" property="phonePassword"/>
+        <result column="roaming_end_date" jdbcType="DATE" property="roamingEndDate"/>
+        <result column="comment" jdbcType="VARCHAR" property="comment"/>
+        <result column="warehouse_id" jdbcType="INTEGER" property="warehouseId"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+    id, main_type, bank_name, owner, card_no, province, city, branch_name, id_no, login_password,
+    pay_password, ukey_password, type_user_name, type_login_password, type_pay_password, 
+    secondary_type, status, phone_no, phone_password, roaming_end_date, comment,
+    warehouse_id, create_user_id, create_time
+  </sql>
+
+    <select id="selectByCardNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card
+        where card_no = #{cardNo,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByCardNos" resultType="com.cims.business.card.entity.Card">
+        select id, card_no, status, warehouse_id from card where card_no in
+        <foreach collection="list" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </select>
+
+    <select id="selectByIds" resultType="com.cims.business.card.entity.Card">
+        select id, card_no,status from card where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+        and is_delete = 0
+    </select>
+
+    <insert id="insertBatch">
+        insert into card (main_type, bank_name,
+        owner, card_no, province,
+        city, branch_name, id_no,
+        login_password, pay_password, ukey_password,
+        type_user_name, type_login_password, type_pay_password,
+        secondary_type, status, phone_no,
+        phone_password, roaming_end_date, comment,
+        warehouse_id, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.mainType,jdbcType=INTEGER}, #{item.bankName,jdbcType=VARCHAR},
+            #{item.owner,jdbcType=VARCHAR}, #{item.cardNo,jdbcType=VARCHAR}, #{item.province,jdbcType=VARCHAR},
+            #{item.city,jdbcType=VARCHAR}, #{item.branchName,jdbcType=VARCHAR}, #{item.idNo,jdbcType=VARCHAR},
+            #{item.loginPassword,jdbcType=VARCHAR}, #{item.payPassword,jdbcType=VARCHAR},
+            #{item.ukeyPassword,jdbcType=VARCHAR},
+            #{item.typeUserName,jdbcType=VARCHAR}, #{item.typeLoginPassword,jdbcType=VARCHAR},
+            #{item.typePayPassword,jdbcType=VARCHAR},
+            #{item.secondaryType,jdbcType=INTEGER}, #{item.status,jdbcType=INTEGER}, #{item.phoneNo,jdbcType=VARCHAR},
+            #{item.phonePassword,jdbcType=VARCHAR}, #{item.roamingEndDate,jdbcType=DATE},
+            #{item.comment,jdbcType=VARCHAR},
+            #{item.warehouseId,jdbcType=INTEGER}, #{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        main_type = values(main_type),bank_name = values(bank_name),
+        owner = values(owner),card_no = values(card_no),province = values(province),
+        city = values(city),branch_name = values(branch_name),id_no = values(id_no),
+        login_password = values(login_password),pay_password = values(pay_password),ukey_password =
+        values(ukey_password),
+        type_user_name = values(type_user_name),type_login_password = values(type_login_password),type_pay_password =
+        values(type_pay_password),
+        secondary_type = values(secondary_type),status = values(status),phone_no = values(phone_no),
+        phone_password = values(phone_password),roaming_end_date = values(roaming_end_date),comment = values(comment),
+        warehouse_id = values(warehouse_id),create_user_id = values(create_user_id), is_delete = 0
+    </insert>
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.cims.business.card.entity.Card">
+        update card
+        <set>
+            <if test="mainType != null">
+                main_type = #{mainType,jdbcType=INTEGER},
+            </if>
+            <if test="bankName != null">
+                bank_name = #{bankName,jdbcType=VARCHAR},
+            </if>
+            <if test="owner != null">
+                owner = #{owner,jdbcType=VARCHAR},
+            </if>
+            <if test="province != null">
+                province = #{province,jdbcType=VARCHAR},
+            </if>
+            <if test="city != null">
+                city = #{city,jdbcType=VARCHAR},
+            </if>
+            <if test="branchName != null">
+                branch_name = #{branchName,jdbcType=VARCHAR},
+            </if>
+            <if test="idNo != null">
+                id_no = #{idNo,jdbcType=VARCHAR},
+            </if>
+            <if test="loginPassword != null">
+                login_password = #{loginPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="payPassword != null">
+                pay_password = #{payPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="ukeyPassword != null">
+                ukey_password = #{ukeyPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="typeUserName != null">
+                type_user_name = #{typeUserName,jdbcType=VARCHAR},
+            </if>
+            <if test="typeLoginPassword != null">
+                type_login_password = #{typeLoginPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="typePayPassword != null">
+                type_pay_password = #{typePayPassword,jdbcType=VARCHAR},
+            </if>
+            <if test="secondaryType != null">
+                secondary_type = #{secondaryType,jdbcType=INTEGER},
+            </if>
+            <if test="status != null">
+                status = #{status,jdbcType=INTEGER},
+            </if>
+            <if test="phoneNo != null">
+                phone_no = #{phoneNo,jdbcType=VARCHAR},
+            </if>
+            <if test="phonePassword != null">
+                phone_password = #{phonePassword,jdbcType=VARCHAR},
+            </if>
+            <if test="roamingEndDate != null">
+                roaming_end_date = #{roamingEndDate,jdbcType=DATE},
+            </if>
+            <if test="comment != null">
+                comment = #{comment,jdbcType=VARCHAR},
+            </if>
+            <if test="warehouseId != null">
+                warehouse_id = #{warehouseId,jdbcType=INTEGER},
+            </if>
+            <if test="createUserId != null">
+                create_user_id = #{createUserId,jdbcType=BIGINT},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=BIGINT}
+    </update>
+
+    <update id="updateBatchForReturn">
+        update card set login_password =
+        case card_no
+        <foreach collection="list" item="item">
+            when #{item.cardNo} then #{item.loginPassword}
+        </foreach>
+        end,
+        pay_password =
+        case card_no
+        <foreach collection="list" item="item">
+            when #{item.cardNo} then #{item.payPassword}
+        </foreach>
+        end,
+        ukey_password =
+        case card_no
+        <foreach collection="list" item="item">
+            when #{item.cardNo} then #{item.ukeyPassword}
+        </foreach>
+        end
+        where card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <update id="updateStatusBatch">
+        update card set status = #{status}
+        where card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <update id="deleteByCardNos">
+        update card set is_delete = 1 where card_no in
+        <foreach collection="list" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <update id="updateArchiveBatch">
+        update card set archive = #{archive} where card_no in
+        <foreach collection="cardNos" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </update>
+</mapper>

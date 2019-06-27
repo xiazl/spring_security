@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cims.business.statement.mapper.StatementMapper">
+
+    <select id="queryUnusedAndUsedPayment" resultType="com.cims.business.statement.vo.CalcInUnusedAndUsedVO">
+        select
+            cp.channel as channel_id, cp.price,
+            case
+              when cs.stop_date is null
+              then datediff(curdate(),cp.purchase_date) + 1
+              else datediff(curdate(),cs.stop_date)
+            end as days
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_settlement cs on c.card_no = cs.card_no and cs.type = 1 and cs.is_last = 1
+        where c.is_delete = 0  and c.status in (0,1)
+    </select>
+
+
+    <select id="queryDisabledPayment" resultType="com.cims.business.statement.vo.CalcInDisabledVO">
+        select
+            c.card_no, cp.channel as channel_id, cp.price,
+            case
+              when cs.stop_date is null
+              then datediff(cm.date,cp.purchase_date)
+              else datediff(cm.date,cs.stop_date) - 1
+            end as days,
+	    datediff(cm.date, cp.purchase_date) as total_days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_settlement cs on c.card_no = cs.card_no and cs.type = 1 and cs.is_last = 1
+        where c.status = 2 and c.archive = 0 and c.is_delete = 0
+    </select>
+
+    <select id="queryProblemPayment" resultType="com.cims.business.statement.vo.CalcInProblemVO">
+        select
+            c.card_no, cp.channel as channel_id, cp.price,
+            case
+              when cs.stop_date is null
+              then datediff(cm.date,cp.purchase_date)
+              else datediff(cm.date,cs.stop_date) - 1
+            end as days,
+	    datediff(cm.date, cp.purchase_date) as total_days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_settlement cs on c.card_no = cs.card_no and cs.type = 1 and cs.is_last = 1
+        where c.status = 4 and c.archive = 0 and c.is_delete = 0
+    </select>
+
+
+
+    <select id="queryFreezePayment" resultType="com.cims.business.statement.vo.CalcInFreezeVO">
+        select
+            c.card_no, cp.channel as channel_id, cm.freeze_type, cm.freeze_amount, cm.process_status, cp.price,
+            case
+                when cs.stop_date is null
+                then datediff(cm.date,cp.purchase_date)
+                else datediff(cm.date,cs.stop_date) - 1
+            end as days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_settlement cs on c.card_no = cs.card_no and cs.type = 1 and cs.is_last = 1
+        where c.status = 3 and c.archive = 0 and c.is_delete = 0
+    </select>
+
+    <select id="queryUsedReceipt" resultType="com.cims.business.statement.vo.CalcOutUsedVO">
+        select
+            cs1.project_id, cs1.price,
+            case
+                when cs2.stop_date is null
+                then datediff(curdate(),cs1.sale_date) + 1
+                else datediff(curdate(),cs2.stop_date)
+            end as days
+        from card c
+        left join card_sale cs1 on c.card_no = cs1.card_no
+        left join card_settlement cs2 on c.card_no = cs2.card_no and cs2.type = 2 and cs2.is_last = 1
+        where c.is_delete = 0 and c.status = 1
+    </select>
+
+    <select id="queryDisabledReceipt" resultType="com.cims.business.statement.vo.CalcOutDisabledVO">
+        select
+            c.card_no, cs1.project_id, cs1.price,
+            case
+                when cs2.stop_date is null
+                then datediff(cm.date,cs1.sale_date)
+                else datediff(cm.date,cs2.stop_date) - 1
+            end as days,
+            datediff(cm.date, cs1.sale_date) as total_days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_sale cs1 on c.card_no = cs1.card_no
+        left join card_settlement cs2 on c.card_no = cs2.card_no and cs2.type = 2 and cs2.is_last = 1
+        where c.status = 2 and c.archive = 0 and c.is_delete = 0  and cs1.project_id is not null
+    </select>
+
+    <select id="queryProblemReceipt" resultType="com.cims.business.statement.vo.CalcOutProblemVO">
+        select
+            c.card_no, cs1.project_id, cs1.price,
+            case
+                when cs2.stop_date is null
+                then datediff(cm.date,cs1.sale_date)
+                else datediff(cm.date,cs2.stop_date) - 1
+            end as days,
+            datediff(cm.date, cs1.sale_date) as total_days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_sale cs1 on c.card_no = cs1.card_no
+        left join card_settlement cs2 on c.card_no = cs2.card_no and cs2.type = 2 and cs2.is_last = 1
+        where c.status = 4 and c.archive = 0 and c.is_delete = 0  and cs1.project_id is not null
+    </select>
+
+
+    <select id="queryFreezeReceipt" resultType="com.cims.business.statement.vo.CalcOutFreezeVO">
+        select
+            c.card_no, cs1.project_id, cs1.price, cm.freeze_type,
+            case
+                when cs2.stop_date is null
+                then datediff(cm.date,cs1.sale_date)
+                else datediff(cm.date,cs2.stop_date) - 1
+            end as days
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        left join card_sale cs1 on c.card_no = cs1.card_no
+        left join card_settlement cs2 on c.card_no = cs2.card_no and cs2.type = 2 and cs2.is_last = 1
+        where c.status = 3 and c.archive = 0 and c.is_delete = 0 and cs1.project_id is not null
+    </select>
+
+
+
+
+
+
+
+
+
+    <select id="queryChannelProcessMethod" resultType="com.cims.business.statement.vo.ChannelProcessMethodVO">
+        select
+            cp.channel as channel_id,
+            count(1) as total_count,
+            sum(cm.freeze_amount) as total_amount,
+            sum(if(cm.process_method = 1, 1, 0)) as withholding_count,
+            sum(if(cm.process_method = 1, cm.freeze_amount, 0)) as withholding_amount,
+            sum(if(cm.process_method = 2, 1, 0)) as channel_deal_count,
+            sum(if(cm.process_method = 2, cm.freeze_amount, 0)) as channel_deal_amount,
+            sum(if(cm.process_method = 3, 1, 0)) as self_thawing_count,
+            sum(if(cm.process_method = 3, cm.freeze_amount, 0)) as self_thawing_amount,
+            sum(if(cm.process_method = 4, 1, 0)) as card_fee_deduction_count,
+            sum(if(cm.process_method = 4, cm.freeze_amount, 0)) as card_fee_deduction_amount
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_maintain cm on c.card_no = cm.card_no
+        where
+            c.`status` = 3
+            <if test="startDate != null">
+                and cm.date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cm.date &lt;= #{stopDate}
+            </if>
+            and cm.is_delete = 0
+        group by cp.channel
+
+    </select>
+
+
+    <select id="queryChannelProcessStatus" resultType="com.cims.business.statement.vo.ChannelProcessStatusVO">
+        select
+            cp.channel as channel_id,
+            sum(if(cm.process_status = 1, 1, 0)) as processing_count,
+            sum(if(cm.process_status = 1, cm.freeze_amount, 0)) as processing_amount,
+            sum(if(cm.process_status = 2, 1, 0)) as un_complete_count,
+            sum(if(cm.process_status = 2, cm.freeze_amount, 0)) as un_complete_amount,
+            sum(if(cm.process_status = 3, 1, 0)) as on_time_count,
+            sum(if(cm.process_status = 3, cm.freeze_amount, 0)) as on_time_amount,
+            sum(if(cm.process_status = 4, 1, 0)) as over_time_count,
+            sum(if(cm.process_status = 4, cm.freeze_amount, 0)) as over_time_amount,
+            sum(if(cm.process_status = 5, 1, 0)) as betained_count,
+            sum(if(cm.process_status = 5, cm.freeze_amount, 0)) as betained_amount,
+            sum(if(cm.process_status = 6, 1, 0)) as no_deal_count,
+            sum(if(cm.process_status = 6, cm.freeze_amount, 0)) as no_deal_amount
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_maintain cm on c.card_no = cm.card_no
+        where
+            c.`status` = 3
+            <if test="startDate != null">
+                and cm.date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cm.date &lt;= #{stopDate}
+            </if>
+            and cm.is_delete = 0
+        group by cp.channel
+    </select>
+
+
+
+    <select id="queryChannelFreezeType" resultType="com.cims.business.statement.vo.ChannelFreezeTypeVO">
+        select
+            cp.channel as channel_id,
+            count(1) as total_count,
+            sum(cm.freeze_amount) as total_amount,
+            sum(if(cm.freeze_type = 1, 1, 0)) as risk_control_count,
+            sum(if(cm.freeze_type = 1, cm.freeze_amount, 0)) as risk_control_amount,
+            sum(if(cm.freeze_type = 2, 1, 0)) as malfunction_count,
+            sum(if(cm.freeze_type = 2, cm.freeze_amount, 0)) as malfunction_amount,
+            sum(if(cm.freeze_type = 3, 1, 0)) as artificial_count,
+            sum(if(cm.freeze_type = 3, cm.freeze_amount, 0)) as artificial_amount,
+            sum(if(cm.freeze_type = 4, 1, 0)) as judicial_count,
+            sum(if(cm.freeze_type = 4, cm.freeze_amount, 0)) as judicial_amount,
+            sum(if(cm.freeze_type = 5, 1, 0)) as suspected_justice_count,
+            sum(if(cm.freeze_type = 5, cm.freeze_amount, 0)) as suspected_justice_amount
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_maintain cm on c.card_no = cm.card_no
+        where
+            c.`status` = 3
+            <if test="startDate != null">
+                and cm.date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cm.date &lt;= #{stopDate}
+            </if>
+            and cm.is_delete = 0
+        group by cp.channel
+    </select>
+
+    <select id="queryProjectFreezeType" resultType="com.cims.business.statement.vo.ProjectFreezeTypeVO">
+        select
+            cs.project_id,
+            count(1) as total_count,
+            sum(cm.freeze_amount) as total_amount,
+            sum(if(cm.freeze_type = 1, 1, 0)) as risk_control_count,
+            sum(if(cm.freeze_type = 1, cm.freeze_amount, 0)) as risk_control_amount,
+            sum(if(cm.freeze_type = 2, 1, 0)) as malfunction_count,
+            sum(if(cm.freeze_type = 2, cm.freeze_amount, 0)) as malfunction_amount,
+            sum(if(cm.freeze_type = 3, 1, 0)) as artificial_count,
+            sum(if(cm.freeze_type = 3, cm.freeze_amount, 0)) as artificial_amount,
+            sum(if(cm.freeze_type = 4, 1, 0)) as judicial_count,
+            sum(if(cm.freeze_type = 4, cm.freeze_amount, 0)) as judicial_amount,
+            sum(if(cm.freeze_type = 5, 1, 0)) as suspected_justice_count,
+            sum(if(cm.freeze_type = 5, cm.freeze_amount, 0)) as suspected_justice_amount
+        from card c
+        left join card_sale cs on c.card_no = cs.card_no and cs.is_delete = 0
+        left join card_maintain cm on c.card_no = cm.card_no
+        where
+            c.`status` = 3
+            and cs.id is not null
+            <if test="startDate != null">
+                and cm.date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cm.date &lt;= #{stopDate}
+            </if>
+            and cm.is_delete = 0
+        group by cs.project_id
+    </select>
+
+    <select id="queryBankFreezeType" resultType="com.cims.business.statement.vo.BankFreezeTypeVO">
+        select
+            c.bank_name,
+            count(1) as total_count,
+            sum(cm.freeze_amount) as total_amount,
+            sum(if(cm.freeze_type = 1, 1, 0)) as risk_control_count,
+            sum(if(cm.freeze_type = 1, cm.freeze_amount, 0)) as risk_control_amount,
+            sum(if(cm.freeze_type = 2, 1, 0)) as malfunction_count,
+            sum(if(cm.freeze_type = 2, cm.freeze_amount, 0)) as malfunction_amount,
+            sum(if(cm.freeze_type = 3, 1, 0)) as artificial_count,
+            sum(if(cm.freeze_type = 3, cm.freeze_amount, 0)) as artificial_amount,
+            sum(if(cm.freeze_type = 4, 1, 0)) as judicial_count,
+            sum(if(cm.freeze_type = 4, cm.freeze_amount, 0)) as judicial_amount,
+            sum(if(cm.freeze_type = 5, 1, 0)) as suspected_justice_count,
+            sum(if(cm.freeze_type = 5, cm.freeze_amount, 0)) as suspected_justice_amount
+        from card c
+        left join card_maintain cm on c.card_no = cm.card_no
+        where
+            c.`status` = 3
+            <if test="startDate != null">
+                and cm.date &gt;= #{startDate}
+            </if>
+            <if test="stopDate != null">
+                and cm.date &lt;= #{stopDate}
+            </if>
+            and cm.is_delete = 0
+        group by c.bank_name
+    </select>
+
+
+    <select id="queryWarehouseUnused" resultType="com.cims.business.statement.vo.WarehouseUnusedVO">
+        select
+            c.warehouse_id,
+            count(1) as total_count,
+            sum(if(c.secondary_type = 1, 1, 0)) as a_count,
+            sum(if(c.secondary_type = 2, 1, 0)) as b_count,
+            sum(if(c.secondary_type = 3, 1, 0)) as c_count,
+            sum(if(c.secondary_type = 4, 1, 0)) as mobile_bank_count,
+            sum(if(c.secondary_type = 5, 1, 0)) as alipay_main_count,
+            sum(if(c.secondary_type = 6, 1, 0)) as alipay_sub_count
+        from card c
+        where
+            c.status = 0 and c.is_delete = 0
+        group by c.warehouse_id
+    </select>
+
+    <select id="queryWarehouseBankUnused" resultType="com.cims.business.statement.vo.WarehouseBankUnusedVO">
+        select
+            c.bank_name,
+            count(1) as total_count,
+            sum(if(c.warehouse_id = 1, 1, 0)) as phnom_penh_count,
+            sum(if(c.warehouse_id = 2, 1, 0)) as gold_kapok_count,
+            sum(if(c.warehouse_id = 3, 1, 0)) as philippines_count
+        from card c
+        where
+            c.status = 0 and c.is_delete = 0
+        group by c.bank_name
+    </select>
+
+    <select id="queryChannelStock" resultType="com.cims.business.statement.vo.ChannelStockVO">
+        select
+            cp.channel as channel_id,
+            count(1) as total_count,
+            sum(if(c.status = 0, 1, 0)) as unused_count,
+            sum(if(c.status = 1, 1, 0)) as used_count
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        where c.status in (0,1) and c.is_delete = 0
+        group by cp.channel
+    </select>
+
+    <select id="queryChannelDisableType" resultType="com.cims.business.statement.vo.ChannelDisableTypeVO">
+        select
+            cp.channel as channel_id,
+            count(1) as total_count,
+            sum(if(cm.disable_type = 1, 1, 0)) as proactive_disable_count,
+            sum(if(cm.disable_type = 2, 1, 0)) as channel_disable_count
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_maintain cm on c.card_no = cm.card_no
+        where c.status = 2 and c.is_delete = 0
+        <if test="startDate != null">
+            and cm.date &gt;= #{startDate}
+        </if>
+        <if test="stopDate != null">
+            and cm.date &lt;= #{stopDate}
+        </if>
+        group by cp.channel
+    </select>
+
+
+    <select id="queryProjectUsedDetail" resultType="com.cims.business.statement.vo.ProjectUsedDetailVO">
+        select
+            c.bank_name, cp.project_name, count(1) as card_count
+        from card c
+        left join card_sale cs on c.card_no = cs.card_no and cs.is_delete = 0
+        left join card_project cp on cs.project_id = cp.id
+        where c.status = 1 and c.is_delete = 0 and cs.id is not null
+        group by c.bank_name, cs.project_id
+    </select>
+
+</mapper>

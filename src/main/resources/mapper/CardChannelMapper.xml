@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.CardChannelMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.CardChannel">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="channel_name" jdbcType="VARCHAR" property="channelName"/>
+        <result column="is_delete" jdbcType="BIT" property="isDelete"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, channel_name, is_delete, create_user_id, create_time
+  </sql>
+
+    <select id="list" resultType="com.cims.business.card.entity.CardChannel">
+        select id,channel_name,create_time from card_channel
+        where is_delete = 0
+        <if test="channelName != null and channelName.length() > 0">
+            and channel_name like concat('%',#{channelName},'%')
+        </if>
+
+    </select>
+
+    <select id="listAll" resultType="com.cims.business.card.entity.CardChannel">
+        select id,channel_name,create_time from card_channel
+    </select>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card_channel
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+
+    <select id="selectByChannelName" parameterType="string" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card_channel
+        where channel_name = #{channelName,jdbcType=VARCHAR}
+    </select>
+
+    <update id="deleteByPrimaryKeys" parameterType="java.lang.Integer">
+        update card_channel set is_delete = 1
+        where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <insert id="insert" parameterType="com.cims.business.card.entity.CardChannel">
+    insert into card_channel (channel_name, create_user_id)
+    values (#{channelName,jdbcType=VARCHAR}, #{createUserId})
+  </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.cims.business.card.entity.CardChannel">
+        update card_channel
+        <set>
+            <if test="channelName != null">
+                channel_name = #{channelName,jdbcType=VARCHAR},
+            </if>
+            <if test="createUserId != null">
+                create_user_id = #{createUserId,jdbcType=BIGINT},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+</mapper>

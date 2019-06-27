@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.CardMaintainMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.CardMaintain">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="card_no" jdbcType="VARCHAR" property="cardNo"/>
+        <result column="date" jdbcType="TIMESTAMP" property="date"/>
+        <result column="disable_type" jdbcType="INTEGER" property="disableType"/>
+        <result column="freeze_type" jdbcType="INTEGER" property="freezeType"/>
+        <result column="reason" jdbcType="VARCHAR" property="reason"/>
+        <result column="freeze_amount" jdbcType="DECIMAL" property="freezeAmount"/>
+        <result column="process_status" jdbcType="INTEGER" property="processStatus"/>
+        <result column="over_head" jdbcType="DECIMAL" property="overHead"/>
+        <result column="payback_amount" jdbcType="DECIMAL" property="paybackAmount"/>
+        <result column="department" jdbcType="VARCHAR" property="department"/>
+        <result column="account" jdbcType="VARCHAR" property="account"/>
+        <result column="finish_date" jdbcType="TIMESTAMP" property="finishDate"/>
+        <result column="process_method" jdbcType="INTEGER" property="processMethod"/>
+        <result column="problem_desc" jdbcType="VARCHAR" property="problemDesc"/>
+        <result column="comment" jdbcType="VARCHAR" property="comment"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, card_no, `date`, disable_type, freeze_type, reason, freeze_amount, process_status, over_head, payback_amount,
+    department, account, finish_date, process_method, problem_desc, comment, create_user_id, create_time
+  </sql>
+
+    <select id="list" resultType="com.cims.business.card.vo.CardMaintainListVO">
+        select ca.id,ca.main_type, cm.id maintain_id, ca.card_no, ca.bank_name, ca.owner,ca.id_no, ca.phone_no, cm.date,
+        cm.disable_type,cm.freeze_type, cm.reason, ca.status, cm.freeze_amount, cm.process_status, cm.over_head,ca.pay_password,
+        cm.process_method, cm.payback_amount, cm.department, cm.account, cm.finish_date,cm.problem_desc, cm.comment,
+        cm.create_time,u.nickname create_user,pr.project_name,ch.channel_name,cp.purchase_date,cs.sale_date
+        from card ca left join card_maintain cm on ca.card_no = cm.card_no and cm.is_delete = 0
+        left join card_purchase cp on ca.card_no = cp.card_no
+        left join card_sale cs on ca.card_no = cs.card_no
+        left join card_project pr on pr.id = cs.project_id
+        left join card_channel ch on ch.id = cp.channel
+        left join `user` u on u.id = cm.create_user_id
+        <where>
+            ca.is_delete = 0
+
+            <if test="cardNo != null and cardNo.length() > 0">
+                and ca.card_no like concat('%',#{cardNo},'%')
+            </if>
+            <if test="status != null">
+                and ca.status = #{status}
+            </if>
+            <if test="bankName != null and bankName.length() > 0">
+                and ca.bank_name like concat('%',#{bankName},'%')
+            </if>
+            <if test="owner != null and owner.length() > 0">
+                and ca.owner like concat('%',#{owner},'%')
+            </if>
+            <if test="idNo != null and idNo.length() > 0">
+                and ca.id_no like concat('%',#{idNo},'%')
+            </if>
+            <if test="phoneNo != null and phoneNo.length() > 0">
+                and ca.phone_no like concat('%',#{phoneNo},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card_maintain
+        where id = #{id,jdbcType=BIGINT}
+    </select>
+
+    <update id="deleteByPrimaryKeys" parameterType="java.lang.Long">
+        update card_maintain set is_delete = 1
+        where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <update id="deleteByCardNos">
+        update card_maintain set is_delete = 1 where card_no in
+        <foreach collection="list" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+    </update>
+
+    <insert id="insertBatchDisable">
+        insert into card_maintain(card_no,status,
+        `date`, disable_type,
+        comment, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, 2, #{item.date,jdbcType=TIMESTAMP},
+            #{item.disableType,jdbcType=INTEGER}, #{item.comment,jdbcType=VARCHAR},#{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        `date` = values(`date`),
+        disable_type = values(disable_type),
+        comment = values(comment),
+        is_delete = 0
+    </insert>
+
+    <insert id="insertBatchFreeze">
+        insert into card_maintain(card_no,status,
+        `date`, freeze_type, reason,
+        freeze_amount, process_status, over_head,
+        payback_amount, department, account,
+        finish_date, process_method,
+        comment, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, 3, #{item.date,jdbcType=TIMESTAMP},
+            #{item.freezeType,jdbcType=INTEGER}, #{item.reason,jdbcType=VARCHAR},#{item.freezeAmount,jdbcType=DECIMAL},
+            #{item.processStatus,jdbcType=INTEGER}, #{item.overHead,jdbcType=DECIMAL},
+            #{item.paybackAmount,jdbcType=DECIMAL},
+            #{item.department,jdbcType=VARCHAR}, #{item.account,jdbcType=VARCHAR},
+            #{item.finishDate,jdbcType=TIMESTAMP},
+            #{item.processMethod,jdbcType=INTEGER}, #{item.comment,jdbcType=VARCHAR},#{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        `date` = values(`date`),
+        freeze_type = values(freeze_type),
+        reason = values(reason),
+        freeze_amount = values(freeze_amount),
+        process_status = values(process_status),
+        over_head = values(over_head),
+        payback_amount = values(payback_amount),
+        department = values(department),
+        account = values(account),
+        finish_date = values(finish_date),
+        process_method = values(process_method),
+        comment = values(comment),
+        is_delete = 0
+    </insert>
+
+    <insert id="insertBatchProblem">
+        insert into card_maintain(card_no,status,
+        `date`,problem_desc, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, 4, #{item.date,jdbcType=TIMESTAMP},
+            #{item.problemDesc,jdbcType=VARCHAR},#{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        card_no = values(card_no),
+        `date` = values(`date`),
+        problem_desc = values(problem_desc),
+        is_delete = 0
+    </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.cims.business.card.entity.CardMaintain">
+    update card_maintain
+    set `date` = #{date,jdbcType=TIMESTAMP},
+      disable_type = #{disableType,jdbcType=INTEGER},
+      freeze_type = #{freezeType,jdbcType=INTEGER},
+        <if test="status != null">
+            status = #{status,jdbcType=INTEGER},
+        </if>
+      freeze_amount = #{freezeAmount,jdbcType=DECIMAL},
+      reason = #{reason,jdbcType=VARCHAR},
+      process_status = #{processStatus,jdbcType=INTEGER},
+      over_head = #{overHead,jdbcType=DECIMAL},
+      payback_amount = #{paybackAmount,jdbcType=DECIMAL},
+      department = #{department,jdbcType=VARCHAR},
+      account = #{account,jdbcType=VARCHAR},
+      problem_desc = #{problemDesc,jdbcType=VARCHAR},
+      finish_date = #{finishDate,jdbcType=TIMESTAMP},
+      process_method = #{processMethod,jdbcType=INTEGER},
+      comment = #{comment,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+    <select id="listByCardNos" resultType="com.cims.business.card.entity.CardMaintain">
+        select id, card_no, `date`, status, freeze_type, freeze_amount, process_status, problem_desc from card_maintain
+        where card_no in
+        <foreach collection="cardNos" item="cardNo" open="(" close=")" separator=",">
+            #{cardNo}
+        </foreach>
+        and is_delete = 0
+    </select>
+
+
+</mapper>

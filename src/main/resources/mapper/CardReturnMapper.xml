@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.CardReturnMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.CardReturn">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="card_no" jdbcType="VARCHAR" property="cardNo"/>
+        <result column="verify_amount" jdbcType="DECIMAL" property="verifyAmount"/>
+        <result column="diff_amount" jdbcType="DECIMAL" property="diffAmount"/>
+        <result column="return_date" jdbcType="DATE" property="returnDate"/>
+        <result column="verify_user" jdbcType="VARCHAR" property="verifyUser"/>
+        <result column="comment" jdbcType="VARCHAR" property="comment"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+    id, card_no, verify_amount, diff_amount, return_date, verify_user, comment, create_user_id,
+    create_time
+  </sql>
+
+    <select id="list" resultType="com.cims.business.card.vo.CardReturnListVO">
+        select cr.id, cr.card_no, verify_amount, diff_amount, return_date, verify_user, cr.comment, cr.create_time,
+        ca.login_password,ca.pay_password,ca.ukey_password,ca.bank_name,ca.owner
+        from card_return cr left join card ca on cr.card_no = ca.card_no
+        <where>
+            cr.is_delete = 0
+
+            <if test="cardNo != null and cardNo.length() > 0">
+                and cr.card_no like concat('%',#{cardNo},'%')
+            </if>
+            <if test="bankName != null and bankName.length() > 0">
+                and ca.bank_name like concat('%',#{bankName},'%')
+            </if>
+            <if test="owner != null and owner.length() > 0">
+                and ca.owner like concat('%',#{owner},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectByCardNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card_return
+        where card_no = #{cardNo,jdbcType=VARCHAR}
+    </select>
+
+    <update id="deleteByPrimaryKeys" parameterType="java.lang.Long">
+        update card_return set is_delete = 1
+        where id in
+        <foreach collection="list" item="id" separator="," open="(" close=")">
+            #{id}
+        </foreach>
+        and is_delete = 0
+    </update>
+
+    <insert id="insert" parameterType="com.cims.business.card.entity.CardReturn">
+    insert into card_return (card_no, verify_amount,
+      diff_amount, return_date, verify_user,
+      comment, create_user_id
+      )
+    values (#{cardNo,jdbcType=BIGINT}, #{verifyAmount,jdbcType=DECIMAL},
+      #{diffAmount,jdbcType=DECIMAL}, #{returnDate,jdbcType=DATE}, #{verifyUser,jdbcType=VARCHAR},
+      #{comment,jdbcType=VARCHAR}, #{createUserId,jdbcType=BIGINT}
+      )
+    </insert>
+
+    <insert id="insertBatch">
+        insert into card_return(card_no, verify_amount,
+        diff_amount, return_date, verify_user,
+        comment, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=BIGINT}, #{item.verifyAmount,jdbcType=DECIMAL},
+            #{item.diffAmount,jdbcType=DECIMAL}, #{item.returnDate,jdbcType=DATE}, #{item.verifyUser,jdbcType=VARCHAR},
+            #{item.comment,jdbcType=VARCHAR}, #{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        verify_amount = values(verify_amount),
+        diff_amount = values(diff_amount),
+        return_date = values(return_date),
+        verify_user = values(verify_user),
+        comment = values(comment)
+    </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.cims.business.card.entity.CardReturn">
+    update card_return
+    set verify_amount = #{verifyAmount,jdbcType=DECIMAL},
+      diff_amount = #{diffAmount,jdbcType=DECIMAL},
+      return_date = #{returnDate,jdbcType=DATE},
+      verify_user = #{verifyUser,jdbcType=VARCHAR},
+      comment = #{comment,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+
+</mapper>

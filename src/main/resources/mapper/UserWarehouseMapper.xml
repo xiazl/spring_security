@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.UserWarehouseMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.UserWarehouse">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="user_id" jdbcType="BIGINT" property="userId"/>
+        <result column="warehouse_id" jdbcType="BIT" property="warehouseId"/>
+        <result column="is_delete" jdbcType="BIT" property="isDelete"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, user_id, warehouse_id, is_delete
+    </sql>
+    <update id="deleteByUserId" parameterType="java.lang.Long">
+        update user_warehouse set is_delete = 1
+        where user_id = #{userId,jdbcType=BIGINT}
+    </update>
+
+    <insert id="insert" parameterType="com.cims.business.card.entity.UserWarehouse">
+        insert into user_warehouse (user_id, warehouse_id)
+        values (#{userId,jdbcType=BIGINT}, #{warehouseId,jdbcType=INTEGER})
+        ON DUPLICATE KEY UPDATE user_id = #{userId},warehouse_id = #{warehouseId}
+    </insert>
+
+</mapper>

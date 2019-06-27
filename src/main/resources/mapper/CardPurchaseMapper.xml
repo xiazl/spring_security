@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.card.mapper.CardPurchaseMapper">
+    <resultMap id="BaseResultMap" type="com.cims.business.card.entity.CardPurchase">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="card_no" jdbcType="VARCHAR" property="cardNo"/>
+        <result column="channel" jdbcType="INTEGER" property="channel"/>
+        <result column="balance" jdbcType="DECIMAL" property="balance"/>
+        <result column="ckr" jdbcType="VARCHAR" property="ckr"/>
+        <result column="price" jdbcType="DECIMAL" property="price"/>
+        <result column="purchase_date" jdbcType="DATE" property="purchaseDate"/>
+        <result column="create_user_id" jdbcType="BIGINT" property="createUserId"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, card_no, channel, balance, ckr, price, purchase_date, create_user_id, create_time
+  </sql>
+
+    <select id="listByCardNos" resultType="com.cims.business.card.entity.CardPurchase">
+        select card_no,price, purchase_date from card_purchase
+        where card_no in
+        <foreach collection="cardNos" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+    </select>
+
+    <select id="selectByCardNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from card_purchase
+        where card_no = #{cardNo,jdbcType=VARCHAR}
+    </select>
+
+    <insert id="insertBatch">
+        insert into card_purchase (card_no, channel,
+        balance, ckr, price,
+        purchase_date, create_user_id
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.cardNo,jdbcType=VARCHAR}, #{item.channel,jdbcType=INTEGER},
+            #{item.balance,jdbcType=DECIMAL}, #{item.ckr,jdbcType=VARCHAR}, #{item.price,jdbcType=DECIMAL},
+            #{item.purchaseDate,jdbcType=DATE}, #{createUserId,jdbcType=BIGINT}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        card_no = values(card_no),channel = values(channel),
+        balance = values(balance),ckr = values(ckr),price = values(price),
+        purchase_date = values(purchase_date),create_user_id = values(create_user_id),is_delete = 0
+    </insert>
+
+    <update id="updatePriceBatch">
+        update card_purchase set price =
+        case card_no
+        <foreach collection="list" item="item">
+            when #{item.cardNo} then #{item.price}
+        </foreach>
+        end
+        where card_no in
+        <foreach collection="cardNos" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </update>
+
+    <update id="deleteByCardNos">
+        update card_purchase set is_delete = 1 where card_no in
+        <foreach collection="list" item="cardNo" separator="," open="(" close=")">
+            #{cardNo}
+        </foreach>
+    </update>
+
+    <select id="list" resultType="com.cims.business.card.vo.CardPurchaseVO"
+            parameterType="com.cims.business.card.vo.Condition">
+        select
+        c.id, c.main_type, c.bank_name, c.owner, c.card_no, c.province, c.city, c.branch_name, c.id_no,
+        c.login_password, c.comment,
+        c.pay_password, c.ukey_password, c.type_user_name, c.type_login_password, c.type_pay_password, c.secondary_type,
+        c.status, c.phone_no, c.phone_password, c.roaming_end_date, c.warehouse_id, c.create_user_id, c.create_time,
+        cp.channel, cp.ckr, cp.price, cp.purchase_date, cp.balance,
+        cc.id as channel, cc.channel_name as channel_str,
+        w.name as warehouse_name,
+        u.nickname as creator_nick_name
+        from card c
+        left join card_purchase cp on c.card_no = cp.card_no
+        left join card_channel cc on cp.channel = cc.id
+        left join warehouse w on c.warehouse_id = w.id
+        left join user u on c.create_user_id = u.id
+        <where>
+            c.is_delete = 0
+            <if test="warehouseId != null">
+                and c.warehouse_id = #{warehouseId}
+            </if>
+            <if test="cardNo != null">
+                and c.card_no like concat('%',#{cardNo},'%')
+            </if>
+        </where>
+    </select>
+</mapper>

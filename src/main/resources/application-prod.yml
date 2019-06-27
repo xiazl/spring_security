@@ -1,0 +1,62 @@
+server:
+  servlet:
+    context-path: /ci/
+    session:
+      cookie:
+        name: ci
+        path: /
+      timeout: 1h
+
+  port: 8080
+  tomcat.uri-encoding: UTF-8
+spring:
+  profiles:
+    active: prod
+  redis:
+    #    cluster:
+    #      max-redirects: 3
+    #      nodes: 103.97.33.170:6379
+    host: 127.0.0.1
+    database: 0
+    jedis:
+      pool:
+        max-active: 8
+        min-idle: 1
+        max-idle: 8
+        max-wait: 1000ms
+    timeout: 5000ms
+    #    password: N9c3j8a7L3e2i0f2E3
+    password: k9J9c0N5x6w7
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource # 使用druid数据源
+    write:
+      driverClassName: com.mysql.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/cims?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      username: writer
+      password: b2c4N2X7j8j6*
+    read:
+      driverClassName: com.mysql.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/cims?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      username: reader
+      password: G1i8e7M0k9z8*
+
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+7
+
+# MyBatis
+mybatis:
+  typeAliasesPackage: com.cims.business.**.entity
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  configuration:
+    mapUnderscoreToCamelCase: true
+
+#logger
+logging:
+  file: logs/ci.log
+  level:
+    root: info
+    com.cims.business: debug
+

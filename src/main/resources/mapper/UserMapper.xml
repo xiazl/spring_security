@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cims.business.user.mapper.UserMapper">
+
+    <resultMap id="UserInfo" type="com.cims.business.user.vo.UserInfoVO">
+        <id property="id" column="id"/>
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <collection property="roles" ofType="com.cims.business.user.entity.Role">
+            <result column="role_id" property="id"/>
+            <result column="role_code" property="roleCode"/>
+            <result column="role_name" property="roleName"/>
+        </collection>
+        <collection property="warehouseIds" ofType="java.lang.Long" javaType="list">
+            <result column="warehouse_id"/>
+        </collection>
+    </resultMap>
+
+    <resultMap id="UserList" type="com.cims.business.user.vo.UserRoleVO">
+        <id property="id" column="id"/>
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="is_disable" property="isDisable"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_user" property="createUser"/>
+        <result column="update_user" property="updateUser"/>
+        <collection property="roles" ofType="com.cims.business.user.entity.Role">
+            <id column="role_id" property="id"/>
+            <result column="role_name" property="roleName"/>
+        </collection>
+        <collection property="warehouseIds" ofType="java.lang.Long" javaType="list">
+            <result column="warehouse_id"/>
+        </collection>
+    </resultMap>
+
+    <select id="list" resultMap="UserList">
+        select
+        u.id,
+        u.username,
+        u.nickname,
+        u.is_disable,
+        r.id as role_id,
+        r.role_name,
+        u.create_time,
+        u.update_time,
+        u2.nickname as create_user,
+        u3.nickname as update_user,
+        uw.warehouse_id
+
+        from `user` u
+
+        left join user_role ur on u.id = ur.user_id
+
+        left join role r on r.id = ur.role_id
+
+        left join `user` u2 on u2.id = u.create_user_id
+
+        left join `user` u3 on u3.id = u.update_user_id
+
+        left join `user_warehouse` uw on uw.user_id = u.id and uw.is_delete = 0
+
+        where u.is_delete = 0
+        <if test="conditionVO.username!=null and conditionVO.username.length() > 0">
+            and u.username like concat('%',#{conditionVO.username},'%')
+        </if>
+        <if test="conditionVO.nickname!=null and conditionVO.nickname.length() > 0">
+            and u.nickname like concat('%',#{conditionVO.nickname},'%')
+        </if>
+        <if test="conditionVO.roleId != null">
+            and r.id = #{conditionVO.roleId}
+        </if>
+        <if test="conditionVO.isDisable != null">
+            and u.is_disable = #{conditionVO.isDisable}
+        </if>
+        and role_code != 'ROLE_ADMIN'
+
+    </select>
+
+    <select id="getUser" resultType="com.cims.business.user.entity.User">
+        select id,username,nickname,password from `user`
+        <where>
+            is_delete = 0
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="username != null and username.length() > 0">
+                and username = #{username}
+            </if>
+        </where>
+    </select>
+
+    <insert id="addUser" parameterType="com.cims.business.user.entity.User" useGeneratedKeys="true"
+            keyProperty="user.id">
+        INSERT INTO user
+        (
+        username,
+        nickname,
+        password,
+        is_disable,
+        create_time,
+        create_user_id
+
+        )VALUES (
+        #{user.username},
+        #{user.nickname},
+        #{user.password},
+        #{user.isDisable},
+        #{user.createTime},
+        #{user.createUserId}
+        )
+    </insert>
+
+    <insert id="addUserRole" parameterType="map">
+         INSERT INTO user_role (
+              user_id,
+              role_id
+              )VALUES (
+              #{userId},
+              #{roleId}
+              ) ON DUPLICATE KEY UPDATE user_id = #{userId},role_id = #{roleId}
+    </insert>
+
+    <delete id="deleteRoleByUserId" parameterType="java.lang.Long">
+        update user_role set is_delete = 1
+        where user_id = #{userId,jdbcType=BIGINT}
+    </delete>
+
+
+    <select id="listRoles" resultType="com.cims.business.user.entity.Role">
+        SELECT id,role_code,role_name,role_des FROM role where role_code != 'ROLE_ADMIN'
+    </select>
+
+    <update id="updateUser" parameterType="com.cims.business.user.entity.User">
+
+        UPDATE user
+        <set>
+            <if test="username != null and username != ''">
+                username = #{username},
+            </if>
+            <if test="nickname != null and nickname != ''">
+                nickname = #{nickname},
+            </if>
+            <if test="updateUserId != null">
+                update_user_id = #{updateUserId},
+            </if>
+
+        </set>
+        where id = #{id} and is_disable = 0 and is_delete = 0
+    </update>
+
+    <update id="updateUserPassword" parameterType="com.cims.business.user.entity.User">
+        update user set password = #{password} WHERE id = #{id}
+    </update>
+
+    <select id="getUserByUserId" resultMap="UserInfo">
+        select
+            u.id,
+            u.username,
+            u.nickname,
+            r.id as role_id,
+            r.role_code,
+            r.role_name,
+            uw.warehouse_id
+        from user  u
+        left join user_role ur on u.id = ur.user_id
+        left join role r on r.id = ur.role_id
+        left join user_warehouse uw on uw.user_id = u.id and uw.is_delete = 0
+        where u.id = #{userId}
+    </select>
+
+    <update id="batchDisableUser" parameterType="com.cims.business.user.entity.User">
+        UPDATE user set is_disable = 1,update_user_id = #{updateUserId}
+        where id in(
+        <foreach collection="ids" item="id" index="index" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+
+    <update id="batchEnableUser" parameterType="com.cims.business.user.entity.User">
+        UPDATE user set is_disable = 0 ,update_user_id = #{updateUserId}
+        where id in(
+        <foreach collection="ids" item="id" index="index" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+
+    <update id="batchDeleteUser" parameterType="com.cims.business.user.entity.User">
+        UPDATE user SET is_delete = 1 ,update_user_id = #{updateUserId}
+        where id in(
+        <foreach collection="ids" item="id" index="index" separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+
+</mapper>
